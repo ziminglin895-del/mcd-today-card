@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>麦门今日情报卡 · McDonald's Daily Intel Card</title>
+<meta name="description" content="一张卡看完今天的麦当劳：活动、可领优惠券、积分到期提醒、今日抽奖。真实调用麦当劳 MCP，无 Token 可演示。">
+<style>
+  :root {
+    --red: #DA291C;
+    --yellow: #FFC72C;
+    --ink: #27251F;
+    --gray: #8A8378;
+    --cream: #FFF8EC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    background: #F6EFE3;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--red);
+    color: #fff;
+    text-align: center;
+    padding: 34px 16px 26px;
+  }
+  header .arches { font-size: 15px; letter-spacing: 2px; color: rgba(255,255,255,.85); }
+  header h1 { font-size: 34px; letter-spacing: 3px; margin-top: 6px; }
+  header p { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.92); }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
+  .panel {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 18px rgba(60,40,0,.07);
+    margin-bottom: 18px;
+  }
+  .panel h2 { font-size: 16px; margin-bottom: 10px; }
+  .panel .hint { font-size: 12.5px; color: var(--gray); line-height: 1.7; }
+  .panel .hint a { color: var(--red); }
+  .token-row { display: flex; gap: 8px; margin-top: 10px; }
+  .token-row input {
+    flex: 1; min-width: 0;
+    border: 1.5px solid #E3DACA; border-radius: 10px;
+    padding: 10px 12px; font-size: 14px;
+    outline: none;
+  }
+  .token-row input:focus { border-color: var(--yellow); }
+  button {
+    border: none; cursor: pointer; border-radius: 10px;
+    font-size: 14px; padding: 10px 16px;
+    font-family: inherit;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-ghost { background: #F1EAD9; color: var(--ink); }
+  .actions { display: flex; gap: 10px; }
+  .btn-main {
+    flex: 1; background: var(--red); color: #fff;
+    font-size: 17px; font-weight: 700; padding: 14px;
+    border-radius: 12px; letter-spacing: 2px;
+  }
+  .btn-demo { background: var(--yellow); color: var(--ink); font-weight: 700; padding: 14px 18px; border-radius: 12px; }
+  .badge {
+    display: inline-block; font-size: 12.5px; border-radius: 999px;
+    padding: 4px 12px; margin-top: 12px; background: #F1EAD9; color: var(--gray);
+  }
+  .badge.demo { background: #FEF3C7; color: #92400E; }
+  .badge.live { background: #D1FAE5; color: #065F46; }
+  #log {
+    list-style: none; margin-top: 12px; font-size: 12.5px; color: var(--gray);
+    line-height: 1.9; max-height: 168px; overflow-y: auto;
+  }
+  .card-wrap { text-align: center; }
+  canvas#card {
+    width: min(100%, 430px); height: auto;
+    border-radius: 14px;
+    box-shadow: 0 10px 34px rgba(60,40,0,.18);
+    background: var(--cream);
+  }
+  .card-empty { color: var(--gray); font-size: 14px; padding: 34px 0; }
+  footer { text-align: center; color: var(--gray); font-size: 12px; padding: 0 16px 34px; line-height: 1.9; }
+  footer a { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="arches">McDONALD'S · DAILY INTEL CARD</div>
+  <h1>🍔 麦门今日情报卡</h1>
+  <p>今天有什么活动、哪些券能领、积分哪天过期、抽奖值不值得看 —— 一张卡看完，下载就能晒。</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>🔑 麦当劳 MCP Token（可选）</h2>
+    <p class="hint">
+      填入你自己的 MCP Token 即可生成<b>真实数据</b>卡片；不填则自动进入<b>演示模式</b>，先睹为快。<br>
+      Token 获取：打开 <a href="https://open.mcd.cn/mcp" target="_blank" rel="noopener">open.mcd.cn/mcp</a>，手机号登录后在控制台申请（约 2 分钟）。<br>
+      Token 只保存在本机浏览器（localStorage），页面直连麦当劳 MCP，不经过任何第三方服务器。
+    </p>
+    <div class="token-row">
+      <input id="token" type="password" placeholder="粘贴你的 MCP Token（Bearer 后面的那串）" autocomplete="off">
+      <button id="btn-save-token" class="btn-ghost">保存</button>
+      <button id="btn-clear-token" class="btn-ghost">清除</button>
+    </div>
+    <div class="actions" style="margin-top:14px;">
+      <button id="btn-generate" class="btn-main">生成今日卡</button>
+      <button id="btn-demo" class="btn-demo">演示模式</button>
+    </div>
+    <span id="mode-badge" class="badge">尚未生成</span>
+    <ul id="log"></ul>
+  </section>
+
+  <section class="panel card-wrap">
+    <div id="card-empty" class="card-empty">点上面的「生成今日卡」，你的情报卡会出现在这里 👇</div>
+    <canvas id="card" width="750" height="1000" style="display:none;"></canvas>
+    <div style="margin-top:14px;">
+      <button id="btn-download" class="btn-main" style="max-width:280px;" disabled>⬇ 下载图片分享</button>
+    </div>
+  </section>
+</main>
+
+<footer>
+  本项目为麦当劳程序员节创意开发大赛（M-CODE）参赛作品，由参赛者独立开发，非麦当劳官方产品。<br>
+  数据来源：麦当劳 MCP（mcp.mcd.cn）；本卡只做查询展示，不领券、不抽奖、不下单。<br>
+  演示模式下卡片内容为样例数据，不代表实时活动信息。
+</footer>
+
+<script src="demo-data.js"></script>
+<script src="app.js"></script>
+<script>
+  // 卡片生成后显示 canvas、隐藏占位文字
+  (function () {
+    var timer = setInterval(function () {
+      if (window.__cardReady) {
+        document.getElementById('card').style.display = 'inline-block';
+        document.getElementById('card-empty').style.display = 'none';
+        clearInterval(timer);
+      }
+    }, 150);
+  })();
+</script>
+</body>
+</html>

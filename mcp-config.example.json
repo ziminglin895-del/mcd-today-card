@@ -1,0 +1,1 @@
+{"_comment":"这是脱敏示例配置：请把 ${MCD_MCP_TOKEN} 替换为你自己的环境变量引用，或在本项目网页的 Token 输入框中粘贴你从 https://open.mcd.cn/mcp 申请的 Token。切勿把真实 Token 提交到任何公开仓库。","mcpServers":{"mcd-mcp":{"headers":{"Authorization":"Bearer <redacted>"},"type":"streamablehttp","url":"https://mcp.mcd.cn"}}}
